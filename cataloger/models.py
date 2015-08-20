@@ -21,5 +21,10 @@ class Book(models.Model):
 	def __str__(self):
 		return self.title+" ("+self.isbn+")"
 
-
+class Character(models.Model):
+	book = models.ForeignKey(Book)
+	name = models.CharField(max_length=100)
+	tags = models.ManyToManyField(Tag)
+	def __str__(self):
+		return self.name
 
