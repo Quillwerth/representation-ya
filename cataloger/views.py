@@ -33,10 +33,7 @@ def getBookDetails(request):
   # this is wrong and I am bad
   isbn = request.POST['isbn']
   r = requests.get("https://goodreads.com/book/isbn?format=xml&key=jDPRQ54TVJY13j7gjEUw&isbn="+isbn)
-  # etree needs a file, so we fake one here:
-  fake_file = StringIO(r.text)
-  tree = etree.parse(fake_file)
-  root = tree.getroot()
+  root = etree.fromstring(r.text)
   book = root.find("book")
   # hell yeah, get the content:
   book_info = {'isbn' : isbn}
