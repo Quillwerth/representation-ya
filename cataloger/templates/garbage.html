@@ -1,0 +1,13 @@
+<html>
+	<head />
+	<body>
+		<h1>WELCOME TO MY SITE</h1>
+		<p> you are {{user}}. </p>
+		<form method="post" action="{% url 'loginUser'%}">
+			{% csrf_token %}
+			<input type="text" name="username"/>
+			<input type="password" name="password"/>
+			<button type="submit">LOGIN</button>
+		</form>
+	</body>
+</html>
