@@ -16,16 +16,25 @@ bookInfo = {}
 def startElement(name, attrs):
   openTags.append(name)
 def endElement(name):
+  if name=="authors":
+    # First occurance of this tag is all we're interested in
+    bookInfo["done_authors"] = 1
   openTags.pop()
 def insideTag(data):
   # Check what tag we're in
   if len(openTags) == 0:
-  	return
+    return
   currentTag = openTags[len(openTags)-1]
   tagList = ["title", "publication_day", "publication_month", "publication_year", "num_pages"]
-  if currentTag in tagList:
-  	bookInfo[currentTag] = data
-
+  if currentTag in tagList and bookInfo.get(currentTag) is None:
+    bookInfo[currentTag] = data
+  # if we find a name and we're inside the authors tag
+  # then we're looking at an author
+  if currentTag == "name" and "authors" in openTags:
+    if bookInfo.get("authors") is None:
+      bookInfo["authors"] = []
+    if bookInfo.get("done_authors") is None:
+      bookInfo["authors"].append(data)
 
 
 
@@ -67,6 +76,7 @@ def getBookDetails(request):
   ascii_text = r.text.encode("UTF-8")
   parser.Parse(ascii_text, 1)
   
+  print(bookInfo)
   # hell yeah, get the content:
   book_info = {'isbn' : isbn}
   book_info.update(bookInfo)
@@ -81,8 +91,28 @@ def saveNewBook(request):
   date_parts = request.POST['pub_date'].rsplit("/")
   pub_date = datetime.date(int(date_parts[2]), int(date_parts[1]), int(date_parts[0]))
 
-  
   page_count = request.POST['page_count']
+  
+  authors = []
+  author_count = 1
+
+  while request.POST.get('author'+str(author_count)) is not None:
+    #Find author if exists:
+    authorFullName = request.POST['author'+str(author_count)].split()
+
+    author = m.Author.objects.filter(first_name__contains=authorFullName[0], 
+      last_name__contains=authorFullName[-1])
+
+    if len(author.values()) > 0:
+      authors.extend(author)
+    else:
+      authors.append(m.Author.objects.create(first_name=authorFullName[0],last_name=authorFullName[-1]))
+    author_count = author_count + 1
+
   book = m.Book.objects.create(title=title, isbn=isbn, pub_date=pub_date, page_count=page_count)
+  for author in authors:
+    book.author.add(author.pk)
+
+  book.save()
   return searchISBN(request)
 

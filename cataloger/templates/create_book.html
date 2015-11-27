@@ -21,6 +21,14 @@
 					<td><label for="page_count">Page Count:</label></td>
 					<td><input type="text" name="page_count" value="{{ num_pages }}" style="width: 500px"/></td> 
 				</tr>
+				<tr>
+					<td><label for="authors">Authors:</label></td>
+					<td>
+						{% for author in authors %}
+							<input type="text" name="author{{ forloop.counter }}" value="{{ author }}" style="width: 500px"/><br />
+						{% endfor %}
+					</td>
+				</tr>
 			</table>
 			<button type="submit">Looks good!</button>
 		</form>
