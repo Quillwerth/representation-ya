@@ -5,8 +5,29 @@ from django.contrib.admin.views.decorators import staff_member_required
 import requests
 from io import StringIO
 import xml.etree.ElementTree as etree
+import xml.parsers.expat as expat
 import cataloger.models as m
 import datetime
+
+
+#utility
+openTags = []
+bookInfo = {}
+def startElement(name, attrs):
+  openTags.append(name)
+def endElement(name):
+  openTags.pop()
+def insideTag(data):
+  # Check what tag we're in
+  if len(openTags) == 0:
+  	return
+  currentTag = openTags[len(openTags)-1]
+  tagList = ["title", "publication_day", "publication_month", "publication_year", "num_pages"]
+  if currentTag in tagList:
+  	bookInfo[currentTag] = data
+
+
+
 
 # Create your views here.
 def index(request):
@@ -31,15 +52,26 @@ def searchISBN(request):
 def getBookDetails(request):
   # I shouldn't be doing this in a view
   # this is wrong and I am bad
+  print("getting book details.")
   isbn = request.POST['isbn']
   r = requests.get("https://goodreads.com/book/isbn?format=xml&key=jDPRQ54TVJY13j7gjEUw&isbn="+isbn)
-  root = etree.fromstring(r.text)
-  book = root.find("book")
+  
+  global openTags
+  global bookInfo
+  openTags = []
+  bookInfo = {}
+
+  parser = expat.ParserCreate("UTF-8")
+  parser.StartElementHandler = startElement
+  parser.EndElementHandler = endElement
+  parser.CharacterDataHandler = insideTag
+  parser.Parse(r.text, 1)
+
+  print(bookInfo)
   # hell yeah, get the content:
   book_info = {'isbn' : isbn}
-  book_info["title"] = book.find("title").text
-  book_info["pub_date"] = book.find("publication_day").text + "/" + book.find("publication_month").text + "/" + book.find("publication_year").text
-  book_info["page_count"] = book.find("num_pages").text
+  book_info.update(bookInfo)
+  book_info["pub_date"] = book_info["publication_day"] + "/" + book_info["publication_month"] + "/" + book_info["publication_year"]
   return render(request, "create_book.html", book_info)
 
 @staff_member_required
