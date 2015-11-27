@@ -52,7 +52,6 @@ def searchISBN(request):
 def getBookDetails(request):
   # I shouldn't be doing this in a view
   # this is wrong and I am bad
-  print("getting book details.")
   isbn = request.POST['isbn']
   r = requests.get("https://goodreads.com/book/isbn?format=xml&key=jDPRQ54TVJY13j7gjEUw&isbn="+isbn)
   
@@ -65,9 +64,9 @@ def getBookDetails(request):
   parser.StartElementHandler = startElement
   parser.EndElementHandler = endElement
   parser.CharacterDataHandler = insideTag
-  parser.Parse(r.text, 1)
-
-  print(bookInfo)
+  ascii_text = r.text.encode("UTF-8")
+  parser.Parse(ascii_text, 1)
+  
   # hell yeah, get the content:
   book_info = {'isbn' : isbn}
   book_info.update(bookInfo)
