@@ -35,6 +35,8 @@ class Book(models.Model):
 	isbn = models.CharField(max_length=20)
 	pub_date = models.DateField()
 	page_count = models.CharField(max_length=10)
+	image_url = models.CharField(max_length=300,
+																default="/static/cataloger/no_cover.png")
 	author = models.ManyToManyField(Author)
 	tags = models.ManyToManyField(Tag)
 	def __str__(self):

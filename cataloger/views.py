@@ -3,40 +3,9 @@ from django.http import HttpResponse
 from django.contrib.auth import *
 from django.contrib.admin.views.decorators import staff_member_required
 import requests
-from io import StringIO
-import xml.etree.ElementTree as etree
-import xml.parsers.expat as expat
+import cataloger.services as cataloger_services
 import cataloger.models as m
 import datetime
-
-
-#utility
-openTags = []
-bookInfo = {}
-def startElement(name, attrs):
-  openTags.append(name)
-def endElement(name):
-  if name=="authors":
-    # First occurance of this tag is all we're interested in
-    bookInfo["done_authors"] = 1
-  openTags.pop()
-def insideTag(data):
-  # Check what tag we're in
-  if len(openTags) == 0:
-    return
-  currentTag = openTags[len(openTags)-1]
-  tagList = ["title", "publication_day", "publication_month", "publication_year", "num_pages"]
-  if currentTag in tagList and bookInfo.get(currentTag) is None:
-    bookInfo[currentTag] = data
-  # if we find a name and we're inside the authors tag
-  # then we're looking at an author
-  if currentTag == "name" and "authors" in openTags:
-    if bookInfo.get("authors") is None:
-      bookInfo["authors"] = []
-    if bookInfo.get("done_authors") is None:
-      bookInfo["authors"].append(data)
-
-
 
 # Create your views here.
 def index(request):
@@ -59,27 +28,12 @@ def searchISBN(request):
 
 @staff_member_required
 def getBookDetails(request):
-  # I shouldn't be doing this in a view
-  # this is wrong and I am bad
   isbn = request.POST['isbn']
-  r = requests.get("https://goodreads.com/book/isbn?format=xml&key=jDPRQ54TVJY13j7gjEUw&isbn="+isbn)
-  
-  global openTags
-  global bookInfo
-  openTags = []
-  bookInfo = {}
+  info = cataloger_services.getGoodReadsBookInfo(isbn)
 
-  parser = expat.ParserCreate("UTF-8")
-  parser.StartElementHandler = startElement
-  parser.EndElementHandler = endElement
-  parser.CharacterDataHandler = insideTag
-  ascii_text = r.text.encode("UTF-8")
-  parser.Parse(ascii_text, 1)
-  
-  print(bookInfo)
   # hell yeah, get the content:
   book_info = {'isbn' : isbn}
-  book_info.update(bookInfo)
+  book_info.update(info)
   book_info["pub_date"] = book_info["publication_day"] + "/" + book_info["publication_month"] + "/" + book_info["publication_year"]
   return render(request, "create_book.html", book_info)
 
@@ -112,6 +66,8 @@ def saveNewBook(request):
   book = m.Book.objects.create(title=title, isbn=isbn, pub_date=pub_date, page_count=page_count)
   for author in authors:
     book.author.add(author.pk)
+  if request.POST['image_url'] is not "":
+    book.image_url = request.POST['image_url']
 
   book.save()
   return searchISBN(request)
