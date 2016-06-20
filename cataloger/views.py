@@ -35,6 +35,8 @@ def getBookDetails(request):
   book_info = {'isbn' : isbn}
   book_info.update(info)
   book_info["pub_date"] = book_info["publication_day"] + "/" + book_info["publication_month"] + "/" + book_info["publication_year"]
+  # Load the tags in perhaps the worst way ever
+  book_info["tags"] = m.Tag.objects.all()
   return render(request, "create_book.html", book_info)
 
 @staff_member_required
@@ -63,11 +65,23 @@ def saveNewBook(request):
       authors.append(m.Author.objects.create(first_name=authorFullName[0],last_name=authorFullName[-1]))
     author_count = author_count + 1
 
+    # TBD: WHY DON'T IT WORK
+  theWholePost = request.POST.keys()
+  tags = []
+  for postAttr in theWholePost:
+    print("postattr: "+postAttr)
+    if "tag_" not in postAttr:
+      continue
+    tags.append(postAttr.replace("tag_", ""))
+
+
   book = m.Book.objects.create(title=title, isbn=isbn, pub_date=pub_date, page_count=page_count)
   for author in authors:
     book.author.add(author.pk)
   if request.POST['image_url'] is not "":
     book.image_url = request.POST['image_url']
+  for tag in tags:
+    book.tags.add(tag)
 
   book.save()
   return searchISBN(request)

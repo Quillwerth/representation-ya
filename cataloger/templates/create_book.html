@@ -1,5 +1,7 @@
 <html>
-<head />
+<head>
+	<link rel="stylesheet"  type="text/css" href="/static/cataloger/cataloger.css"/>
+</head>
 	<body>
 		<h1> Review Book Info </h1>
 		<form method="post" action="{% url 'saveNewBook' %}">
@@ -35,6 +37,16 @@
 					<td>
 						<img src="{{image_url}}" /><br />
 						<input type="text" name="image_url" value="{{image_url}}" style="width: 500px" /> * Changing this text will not update the image.
+					</td>
+				</tr>
+				<tr>
+					<td><label for="tags">Tags:</label></td>
+					<td>
+						<div class="tagSelectBox">
+							{% for tag in tags %}
+								<label for="tag_{{ tag.id }}"><input type="checkbox" name="tag_{{ tag.id }}" id="tag_{{ tag.id }}" /> {{ tag }} </label> <br />
+							{% endfor %}
+						</div>
 					</td>
 				</tr>
 			</table>
