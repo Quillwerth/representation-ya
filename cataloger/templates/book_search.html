@@ -1,0 +1,59 @@
+{% load static from staticfiles %}
+
+<html>
+<head>
+  <script src="{% static 'cataloger/jquery-3.0.0.min.js' %}"></script>
+  <script src="{% static 'cataloger/strings.js' %}"></script>
+  <script type="text/javascript" src="{% static 'cataloger/crsf_token_helpers.js' %}"></script>
+  <script type="text/javascript">
+    $(document).ready(function() {
+
+      var tagHTML = '<input type="checkbox" name="{0}" /><span>{1}</span><br />';
+
+      var bookHTML = '<div>{0}</div>'
+      
+      $("#test").click(function(){
+        queryString = $("#testField").val()
+        $.ajax({
+          method: "POST",
+          url: "getTags/",
+          data: {query: queryString}
+        })
+        .done(function(reply){
+          var tagsSection = $("#tags");
+          tagsSection.empty();
+          for(var key in reply){
+            tagsSection.append(tagHTML.format(key, reply[key]));
+          }
+          tagsSection.append('<button type="submit">Search With These Tags</button>');
+        })
+      })
+
+      $("#tags").submit(function(e){
+        e.preventDefault();
+        $.ajax({
+          url:'getBooksWithTags/',
+          method:"POST",
+          data:$('#tags').serializeArray(),
+          success:function(reply){
+            var booksSection = $("#books");
+            booksSection.empty();
+            for(var key in reply){
+              booksSection.append(bookHTML.format(key));
+            }
+          }
+        });
+      });
+
+
+    });
+  </script>
+</head>
+<body>
+  <input type="text" id="testField"/>
+  <button id="test">Find Tags</button>
+  <form id="tags">
+
+  </form>
+  <div id="books"></div>
+</body>

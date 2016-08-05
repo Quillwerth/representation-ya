@@ -1,5 +1,5 @@
 from django.shortcuts import render
-from django.http import HttpResponse
+from django.http import HttpResponse, JsonResponse
 from django.contrib.auth import *
 from django.contrib.admin.views.decorators import staff_member_required
 import requests
@@ -25,6 +25,46 @@ def loginUser(request):
 @staff_member_required
 def searchISBN(request):
   return render(request, "isbn_search.html")
+
+def searchBooks(request):
+  return render(request, "book_search.html")
+
+def getTags(request):
+  print("hello")
+  print(request.POST['query'])
+  query = request.POST['query']
+  tagSet = m.Tag.objects.filter(title__contains=query)
+  responseTags = {}
+  for tag in tagSet:
+    print("found "+tag.title)
+    responseTags["tag_" + str(tag.pk)] = tag.title
+
+  tagGroupSet = m.TagGroup.objects.filter(title__contains=query)
+  for tagGroup in tagGroupSet:
+    print("found "+tagGroup.title)
+    responseTags["taggroup_"+ str(tagGroup.pk)] = tagGroup.title
+
+  return JsonResponse(responseTags)
+
+def getBooksWithTags(request):
+  print("getting books")
+  print(request.POST)
+  tagIdPrefix = "tag_"
+  tagIds = []
+  # get all tagIds in request
+  for field in request.POST:
+    fieldName = field
+    tagIdPrefixPosition = fieldName.find(tagIdPrefix)
+    if(tagIdPrefixPosition >= 0 ):
+      # extract ID
+      tagIds.append(fieldName[(tagIdPrefixPosition+len(tagIdPrefix)):])
+  # Get the books
+  books = cataloger_services.findBooksWithTags(tagIds)
+  titles = {}
+  for book in books:
+    titles[book.title] = " "
+
+  return JsonResponse(titles)
 
 @staff_member_required
 def getBookDetails(request):
@@ -65,7 +105,6 @@ def saveNewBook(request):
       authors.append(m.Author.objects.create(first_name=authorFullName[0],last_name=authorFullName[-1]))
     author_count = author_count + 1
 
-    # TBD: WHY DON'T IT WORK
   theWholePost = request.POST.keys()
   tags = []
   for postAttr in theWholePost:

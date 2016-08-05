@@ -19,9 +19,11 @@ class TagGroup(models.Model):
 
 class Tag(models.Model):
 	group = models.ForeignKey(TagGroup, blank=True, null=True)
-	title = models.CharField(max_length=200)
+	title = models.CharField(max_length=200, db_index=True)
 	def __str__(self):
 		return str(self.group) + ": " + self.title
+	def ToHuman(self):
+		return self.title
 
 class Author(models.Model):
 	first_name = models.CharField(max_length=100)

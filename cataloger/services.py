@@ -1,6 +1,7 @@
 # cataloger services
 import requests
 import xml.parsers.expat as expat
+import cataloger.models as m
 
 def getGoodReadsBookInfo(isbn):
   # Utility:
@@ -44,3 +45,15 @@ def getGoodReadsBookInfo(isbn):
   parser.Parse(ascii_text, 1)
 
   return bookInfo
+
+  # Finds all books with the provided tag object
+def findBooksWithTags(tagIds):
+  query = m.Book.objects.all()
+  if(len(tagIds) is 0):
+    query = {}
+  for tag in tagIds:
+    tagSet = []
+    tagObject = m.Tag.objects.get(pk=tag)
+    tagSet.append(tag)
+    query = query.filter(tags__in=tagSet)
+  return query
