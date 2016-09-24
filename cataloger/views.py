@@ -30,36 +30,38 @@ def searchBooks(request):
   return render(request, "book_search.html")
 
 def getTags(request):
-  print("hello")
-  print(request.POST['query'])
   query = request.POST['query']
   tagSet = m.Tag.objects.filter(title__contains=query)
   responseTags = {}
   for tag in tagSet:
-    print("found "+tag.title)
     responseTags["tag_" + str(tag.pk)] = tag.title
 
   tagGroupSet = m.TagGroup.objects.filter(title__contains=query)
   for tagGroup in tagGroupSet:
-    print("found "+tagGroup.title)
     responseTags["taggroup_"+ str(tagGroup.pk)] = tagGroup.title
 
   return JsonResponse(responseTags)
 
 def getBooksWithTags(request):
-  print("getting books")
-  print(request.POST)
   tagIdPrefix = "tag_"
-  tagIds = []
-  # get all tagIds in request
+  tagGroupIdPrefix = "taggroup_"
+  tagProfile = []
+  # build tagProfile from request
   for field in request.POST:
     fieldName = field
     tagIdPrefixPosition = fieldName.find(tagIdPrefix)
     if(tagIdPrefixPosition >= 0 ):
       # extract ID
-      tagIds.append(fieldName[(tagIdPrefixPosition+len(tagIdPrefix)):])
+      tagProfile.append(fieldName[(tagIdPrefixPosition+len(tagIdPrefix)):])
+
+    tagGroupIdPrefixPosition = fieldName.find(tagGroupIdPrefix)
+    if(tagGroupIdPrefixPosition >= 0 ):
+      # get all Tag IDs in this group
+      tagGroupId = fieldName[(tagGroupIdPrefixPosition+len(tagGroupIdPrefix)):]
+      tagProfile.append(cataloger_services.findAllTagsInGroup(tagGroupId))
+
   # Get the books
-  books = cataloger_services.findBooksWithTags(tagIds)
+  books = cataloger_services.findBooksWithTagProfile(tagProfile)
   titles = {}
   for book in books:
     titles[book.title] = " "

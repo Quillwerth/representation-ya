@@ -46,8 +46,28 @@ def getGoodReadsBookInfo(isbn):
 
   return bookInfo
 
-  # Finds all books with the provided tag object
-def findBooksWithTags(tagIds):
+def findBooksWithTagProfile(tagProfile):
+  """
+  Finds all books with the provided tag profile, and returns a list of models.
+   Parameters:
+    tagProfile: a collection of tag ids, as either single id values, or lists of id values. 
+      The former should represent a precise tag the caller is searching for, whereas the 
+      list of id values should represent an unpacked tag group.
+  Returns: list of book objects that match the tag profile.
+    "Matches the tag profile" is defined as a book that, for each entry in the tag profile,
+    the book has at least one tag in the list described by that tag profile entry.
+  """
+  books = m.Book.objects.all()
+  for tag in tagProfile:
+    currentTagList = []
+    if not isinstance(tag, list):
+      currentTagList.append(tag)
+    else:
+      currentTagList = tag
+    books = filterBooksForAnyTagInSet(books, currentTagList)
+  return books
+
+def findBooksWithAllTags(tagIds):
   query = m.Book.objects.all()
   if(len(tagIds) is 0):
     query = {}
@@ -57,3 +77,33 @@ def findBooksWithTags(tagIds):
     tagSet.append(tag)
     query = query.filter(tags__in=tagSet)
   return query
+
+def filterBooksForAnyTagInSet(books, tagIds):
+  """
+  Filters the books collection for any books containing the tags provided.
+  Parameters:
+    tagIds: list of tag ids
+    books: the Book model objects
+  Returns: a subset of 'books' wherein each book has at least one tag from tagIds.
+  """
+  return books.filter(tags__in=tagIds)
+
+
+def findAllTagsInGroup(groupId):
+  group = m.TagGroup.objects.get(pk=groupId)
+  tagObjects = []
+  tagIds = []
+  innerTagGroups = []
+  innerTagGroups.append(group)
+  iterations = 0
+  while len(innerTagGroups) > 0 and iterations < 10000:
+    currentGroup = innerTagGroups.pop()
+    tagObjects.extend(currentGroup.tag_set.all())
+    innerTagGroups.extend(currentGroup.taggroup_set.all())
+    iterations = iterations + 1
+  for tagObject in tagObjects:
+    tagIds.append(tagObject.pk)
+  return tagIds
+
+
+
